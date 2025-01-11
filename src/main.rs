@@ -15,8 +15,8 @@ mod render;
 mod math;
 mod camera;
 
-const WIDTH: u32 = 400;
-const HEIGHT: u32 = 225;
+const WIDTH: u32 = 1920;
+const HEIGHT: u32 = 1080;
 
 #[pollster::main]
 async fn main() -> Result<()> {

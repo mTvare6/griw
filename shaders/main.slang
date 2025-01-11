@@ -2,7 +2,6 @@ static const float INF = 3.40282346638528859812e+38;
 static const float NINF = -3.40282346638528859812e+38;
 static const float PI      = 3.141592653589793238462;
 static const float EPSILON = 1e-2;
-static const uint MAX_DEPTH = 10u;
 
 static const float2 vertices[6] = {
   float2(-1, 1),
@@ -77,7 +76,7 @@ struct Sphere {
 
     var root = (b-rtd) * inva;
     if (!ray_t.surrounds(root)){
-      root = (b + rtd) / a;
+      root = (b + rtd) * inva;
       if (!ray_t.surrounds(root)){
         return none;
       }
@@ -180,7 +179,7 @@ RWTexture2D<float4> randiance_samples;
 
 static const Sphere initialScene[] = {
   { float3(0, 0, -1), 0.5f, float3(0.7, 0.2, 0.1) },
-  { float3(1.4, 0.5, -1), 1.0f, float3(0.9, 0.9, 1.0) },
+  { float3(1.45, 0.5, -1), 1.0f, float3(0.9, 0.9, 1.0) },
   { float3(0, -100.5f, -1), 100.0f, float3(0.8, 0.8, 0.0) }
 };
 
@@ -207,7 +206,10 @@ func skyColor(Ray ray) -> float3{
 }
 
 func scatter(Ray ray_in, HitRecord hit, inout Rng rng) -> ScatterRecord{
-  let deflect_dir = rng.rand_nvec3() + hit.n;
+  var deflect_dir = hit.n + rng.rand_nvec3();
+  if (near_zero(deflect_dir)) {
+    deflect_dir = hit.n;
+  }
   let attentuation = hit.color;
   Ray ray = { ray_in.at(hit.t) , deflect_dir};
   return {attentuation, ray};
@@ -238,7 +240,7 @@ float4 display_fs(float4 pos : SV_Position) : SV_Target0 {
   uint depth = 0u;
   float3 throughput = float3(1, 1, 1);
   float3 radiance_sample = float3(0, 0, 0);
-  while (depth < 20){
+  while (depth < 64){
     let hit = hit_scene(ray, Interval.IN_SCENE);
     if(!hit.hasValue){
       radiance_sample += throughput*skyColor(ray);
