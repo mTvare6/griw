@@ -1,0 +1,12 @@
+[package]
+name = "griw"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs"
+
+[dependencies]
+anyhow = "1.0.68"
+bytemuck = { version = "1.13.1", features = ["derive"] }
+pollster = { version = "0.3", features = ["macro"] }
+winit = "0.29.1"
+wgpu = { version = "0.19.1", features = ["spirv"] }
