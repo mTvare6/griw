@@ -40,9 +40,9 @@ struct HitRecord {
   bool is_front_face;
 
   [mutating]
-  func set_front_face(Ray r, float3 n){
-    is_front_face = dot(r.dir, n) < 0.0;
-    n = is_front_face ? n : -n;
+  func set_front_face(Ray r, float3 no){
+    is_front_face = dot(r.dir, no) < 0.0;
+    n = is_front_face ? no : -no;
   }
 
 };
@@ -215,15 +215,24 @@ func scatter(Ray ray_in, HitRecord hit, inout Rng rng) -> ScatterRecord{
   return {attentuation, ray};
 }
 
-
 [[shader("vertex")]]
 float4 display_vs(uint vid : SV_VertexID) : SV_Position {
   return float4(vertices[vid], 0.0f, 1.0f);
 }
 
+// from: https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
+float3 ACESFilm(float3 x) {
+  float a = 2.51f;
+  float b = 0.03f;
+  float c = 2.43f;
+  float d = 0.59f;
+  float e = 0.14f;
+  return saturate((x*(a*x+b))/(x*(c*x+d)+e));
+}
+
 [[shader("pixel")]]
 float4 display_fs(float4 pos : SV_Position) : SV_Target0 {
-  var rng = Rng.init(uint2(pos.xy));
+  rng = Rng.init(uint2(pos.xy));
   float aspect_ratio = float(uniforms.width) / float(uniforms.height);
   float3 origin = uniforms.camera.origin;
   float focus_distance = 1.0f;
@@ -254,6 +263,5 @@ float4 display_fs(float4 pos : SV_Position) : SV_Target0 {
   let total = radiance_sample.xyz + select(uniforms.frame_count>1, randiance_samples.Load(int2(pos.xy)).xyz, 0);
   randiance_samples[int2(pos.xy)] = float4(total, 0.0);
   let color = total/float(uniforms.frame_count);
-  let final = pow(color, 1/2.2);
-  return float4(final, 1.0);
+  return float4(ACESFilm(color), 1.0);
 }
